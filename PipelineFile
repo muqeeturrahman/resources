@@ -1,0 +1,61 @@
+pipeline {
+    agent {
+        label 'Skyresources-API'
+    }
+    
+    environment {
+        WORKSPACE_DIR = '/var/lib/jenkins/workspace/skyresources-api/'
+    }
+
+    stages {
+        stage('Preparation') {
+            steps {
+                script {
+                    // Change to the desired workspace directory
+                    dir("${WORKSPACE_DIR}") {
+                        sh 'pm2 stop 0'
+                        sh 'rm -rf node_modules/ package-lock.json'
+                    }
+                }
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    // Change to the desired workspace directory
+                    dir("${WORKSPACE_DIR}") {
+                        sh 'npm install'
+                    }
+                }
+            }
+        }
+
+        stage('Start Application') {
+            steps {
+                script {
+                    // Change to the desired workspace directory
+                    dir("${WORKSPACE_DIR}") {
+                        sh 'pm2 start 0'
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                // Send email on failure with log attachment
+                emailext (
+                    to: 'devops@thesuitch.com',
+                    subject: "Build Failed in Jenkins: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
+                    body: """<p>Build failed for ${env.JOB_NAME} - ${env.BUILD_NUMBER}</p>
+                             <p>Check the attached log for details.</p>""",
+                    attachLog: true,
+                    mimeType: 'text/html'
+                )
+            }
+        }
+    }
+}
